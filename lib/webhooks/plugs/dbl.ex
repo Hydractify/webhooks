@@ -61,9 +61,6 @@ defmodule Webhooks.Plugs.DBL do
 
       # Params missing
       val ->
-        IO.inspect(val)
-        IO.inspect(conn.params)
-
         conn
         |> Webhooks.Util.respond(400, @missing_params)
     end
