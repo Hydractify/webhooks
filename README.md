@@ -10,8 +10,8 @@ Currently supporting:
 
 Required setup:  
 - Adding `dbl_secret` to config.exs (or setting an environment variable called `DBL_SECRET`)
-- Appending `/webhooks/dbl?secret=secret_from_above` to the webservers' url
-- Adding `bot_id` to config.exs (or setting an environment variable called `bot_id`)
+- Specifying ^ secret in the optional available `Authorization` header, dbl provides
+- Adding `bot_id` to config.exs (or setting an environment variable called `BOT_ID`)
 - Redis listening on `127.0.0.1:6397` (default)
 
 Upon receiving an upvote this will add a key `DBL:#{USER_ID}` with the value `1` into redis.

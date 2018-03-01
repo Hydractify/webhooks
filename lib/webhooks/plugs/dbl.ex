@@ -5,10 +5,11 @@ defmodule Webhooks.Plugs.DBL do
 
     Required for this to run are:
       An entry in the config.exs or an environment variable of
-        - :dbl_secret / DBL_SECRET || A secret to match against verifying the notification actually comes from dbl
+        - :dbl_secret / DBL_SECRET || A secret to match against, verifying the notification actually comes from dbl
         - :bot_id / BOT_ID || The id of the bot to expect incoming notifications from
   """
-  import Plug.Conn
+
+  alias Webhooks.Util
 
   @local_secret_missing %{"message" => "No local \"secret\" to match against"}
   @remote_secret_missing %{"message" => "Missing \"secret\" query string parameter"}
@@ -53,16 +54,16 @@ defmodule Webhooks.Plugs.DBL do
       end
 
       conn
-      |> Webhooks.Util.respond(204)
+      |> Util.respond(204)
     else
       {:error, status, data} ->
         conn
-        |> Webhooks.Util.respond(status, data)
+        |> Util.respond(status, data)
 
       # Params missing
-      val ->
+      _ ->
         conn
-        |> Webhooks.Util.respond(400, @missing_params)
+        |> Util.respond(400, @missing_params)
     end
   end
 
@@ -88,13 +89,12 @@ defmodule Webhooks.Plugs.DBL do
   end
 
   defp fetch_remote_secret(conn) do
-    conn = fetch_query_params(conn)
+    case List.keyfind(conn.req_headers, "authorization", 0) do
+      {"authorization", authorization} ->
+        {:ok, authorization}
 
-    with :error <- Map.fetch(conn.query_params, "secret") do
-      {:error, 401, @remote_secret_missing}
-    else
-      tuple ->
-        tuple
+      _ ->
+        {:error, 401, @remote_secret_missing}
     end
   end
 end
