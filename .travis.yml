@@ -1,0 +1,12 @@
+sudo: required
+language: elixir
+services:
+- docker
+install: true
+script: bash ./travis/build.sh
+after_failure:
+- chmod +x ./travis/webhook.sh
+- "./travis/webhook.sh"
+after_success:
+- chmod +x ./travis/webhook.sh
+- "./travis/webhook.sh"
