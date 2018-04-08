@@ -2,15 +2,18 @@ defmodule Webhooks.Application do
   @moduledoc """
     Small application listening for webhooks notifications
 
-    You can configure the redis connection by specifying valid
-    `Redix.start_link/2` options under the environment key `:redis`.
-    > Defaults to `host: "127.0.0.1", port: 6379`
+    You can specify a custom redis url by setting the `REDIS_URL` environment variable.
+    > Defaults to "redis://localhost:6379"
+
+    You can specify the port under which Cowboy will listen to by setting the `PORT` environment variable.
+    > Defaults to `8080`
   """
 
   use Application
 
   def start(_type, _args) do
-    redis_opts = Application.get_env(:webhooks, :redis, host: "127.0.0.1", port: 6379)
+    redis_opts = System.get_env("REDIS_URL") || "redis://localhost:6379"
+    port = System.get_env("PORT") || 8080
 
     children = [
       {Redix, [redis_opts, [name: :redix]]},
@@ -18,7 +21,7 @@ defmodule Webhooks.Application do
         :http,
         Webhooks.Routers,
         [],
-        port: 8080
+        port: port
       )
     ]
 

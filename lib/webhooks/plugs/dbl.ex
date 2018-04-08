@@ -1,18 +1,18 @@
 defmodule Webhooks.Plugs.DBL do
   @moduledoc """
-    Plug listening specifically for Webhooks from http://discordbots.org
-    See: https://discordbots.org/api/docs#webhooks
+    Plug listening specifically for Webhooks from [Discord Bot List](http://discordbots.org)
+    See their [Docs](https://discordbots.org/api/docs#webhooks) for more informations.
 
     Required for this to run are:
       An entry in the config.exs or an environment variable of
-        - :dbl_secret / DBL_SECRET || A secret to match against, verifying the notification actually comes from dbl
-        - :bot_id / BOT_ID || The id of the bot to expect incoming notifications from
+        - `DBL_SECRET` The secret to match against, verifying the notification actually comes from dbl
+        - `BOT_ID` The id of the bot to expect incoming notifications from
   """
 
   alias Webhooks.Util
 
-  @dbl_secret :dbl_secret
-  @bot_id :bot_id
+  @dbl_secret "DBL_SECRET"
+  @bot_id "BOT_ID"
 
   @remote_secret_missing %{"message" => "Missing \"authorization\" header"}
   @local_secret_missing %{"message" => "No local \"secret\" to match against"}
@@ -74,14 +74,8 @@ defmodule Webhooks.Plugs.DBL do
     end
   end
 
-  defp fetch_local(atom, error) do
-    env_key =
-      atom
-      |> to_string
-      |> String.upcase()
-
-    with nil <- System.get_env(env_key),
-         nil <- Application.get_env(:webhooks, atom) do
+  defp fetch_local(env_key, error) do
+    with nil <- System.get_env(env_key) do
       require Logger
 
       error

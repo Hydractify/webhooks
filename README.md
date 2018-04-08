@@ -5,15 +5,22 @@ Small application listening for webhook notifications.
 Currently supporting:
 - [Discord Bots](https://discordbots.org) ([docs](https://discordbots.org/api/docs#webhooks))
 
+## General
+
+Required Setup:  
+- Running Redis
+  - Connection defaults to `redis://127.0.0.1:6397`, can be overriden with an environment variable called `REDIS_URL`
+
+Optional Setup:  
+- You can override the port Cowboy / Plug will listen on by setting an environment variable `PORT`
 
 ## Discord Bots
 
-Required setup:  
-- Adding `dbl_secret` to config.exs (or setting an environment variable called `DBL_SECRET`)
-- Specifying `dbl_secret` secret in the optional available `Authorization` header, dbl provides
-- Adding `bot_id` to config.exs (or setting an environment variable called `BOT_ID`)
-- Running Redis
-  - Connection defaults to `127.0.0.1:6397`, can be configured by specifying `redis` in the config.exs file.
+Required Setup:  
+- Setting an environment variable called `DBL_SECRET`
+- Setting that secret in the optional available `Authorization` header, which dbl provides
+- Setting an environment variable called `BOT_ID` with the id of the bot to receive upvotes for
+
 
 Upon receiving an upvote this will add a key `dbl:#{USER_ID}` with the value `1` into redis.
 > The key will expire after 24 hours; The user can vote again
