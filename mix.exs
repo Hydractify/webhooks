@@ -25,7 +25,8 @@ defmodule Webhooks.MixProject do
       {:cowboy, "~> 1.1"},
       {:plug, "~> 1.4.5"},
       {:poison, "~> 3.1.0"},
-      {:redix, "~> 0.7.0"}
+      {:redix, "~> 0.7.0"},
+      {:distillery, "~> 1.5.2", runtime: false}
     ]
   end
 end
