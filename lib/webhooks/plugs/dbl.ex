@@ -11,59 +11,66 @@ defmodule Webhooks.Plugs.DBL do
 
   alias Webhooks.Util
 
+  @dbl_secret :dbl_secret
+  @bot_id :bot_id
+
+  @remote_secret_missing %{"message" => "Missing \"authorization\" header"}
   @local_secret_missing %{"message" => "No local \"secret\" to match against"}
-  @remote_secret_missing %{"message" => "Missing \"secret\" query string parameter"}
   @invalid_secret %{"message" => "Invalid secret provided"}
+
+  @missing_remote_bot %{"message" => "Malformed post payload, missing \"bot\" key"}
+  @missing_local_bot %{"message" => "No local \"bot\" to match against"}
+  @invalid_bot_id %{"message" => "Invalid post payload, incorrect \"bot\" id"}
+
   @missing_params %{
     "message" =>
-      "Malformed post payload, expected it to have at least \"bot\", \"user\", and \"body\""
-  }
-  @missing_bot %{"message" => "No local \"bot\" to match against"}
-  @invalid_bot %{
-    "message" => "Invalid post payload, unexpected \"bot\" id"
+      "Malformed post payload, expected it to have at least \"bot\", \"user\", and \"type\""
   }
   @invalid_type %{
-    "message" => "Malformed post payload, expected \"type\" to be one of \"upvote\" and \"none\""
+    "message" => "Malformed post payload, expected \"type\" to be one of \"upvote\" and \"test\""
   }
 
   def init(opts), do: opts
 
   def call(conn, _opts) do
-    # Fetch secret sent via the post request
-    with {:ok, remote_secret} <- fetch_remote_secret(conn),
-         # Fetch local secret from env or config
-         {:ok, local_secret} <- fetch_local(:dbl_secret, @local_secret_missing),
-         # Compare those secrets
-         true <- remote_secret == local_secret || {:error, 401, @invalid_secret},
-         # Fetch body params
-         %{"bot" => remote_bot, "type" => type, "user" => user} <- conn.params,
-         # Fetch the bot from env or config
-         {:ok, local_bot} <- fetch_local(:bot_id, @missing_bot),
-         # Compare bot ids
-         true <- remote_bot == local_bot || {:error, 400, @invalid_bot},
-         # Valid the type
-         true <- type in ["upvote", "none"] || {:error, 400, @invalid_type} do
-      case type do
-        "upvote" ->
-          # One may upvote daily, so expire it after 24 hours
-          Redix.command!(:redix, ["SETEX", "DBL:#{user}", 24 * 60 * 60, "1"])
+    # Validate remote and local secrets
+    with :ok <- validate_secret(conn),
+         # Validate remote and local bot ids
+         :ok <- validate_bot_id(conn.params),
+         # Fetch body params, the "test" type is incredible useful as only the owners may test...
+         %{"type" => type, "user" => user} when type in ["test", "upvote"] <- conn.params do
+      Redix.command!(:redix, ["SETEX", "DBL:#{user}", 24 * 60 * 60, "1"])
 
-        "none" ->
-          # Unvoted, removing from voters
-          Redix.command!(:redix, ["DEL", "DBL:#{user}"])
-      end
-
-      conn
-      |> Util.respond(204)
+      Util.respond(conn, 204)
     else
       {:error, status, data} ->
-        conn
-        |> Util.respond(status, data)
+        Util.respond(conn, status, data)
 
-      # Params missing
-      _ ->
-        conn
-        |> Util.respond(400, @missing_params)
+      %{"type" => _type, "user" => _user} ->
+        Util.respond(conn, 400, @invalid_type)
+
+      %{} ->
+        Util.respond(conn, 400, @missing_params)
+    end
+  end
+
+  defp validate_bot_id(%{"bot" => remote}) do
+    with {:ok, local} <- fetch_local(@bot_id, @missing_local_bot) do
+      if remote == local,
+        do: :ok,
+        else: {:error, 400, @invalid_bot_id}
+    end
+  end
+
+  defp validate_bot_id(%{}), do: {:error, 400, @missing_remote_bot}
+
+  defp validate_secret(%{req_headers: headers}) do
+    with {"authorization", remote} <-
+           List.keyfind(headers, "authorization", {:error, 401, @remote_secret_missing}),
+         {:ok, local} <- fetch_local(@dbl_secret, @local_secret_missing) do
+      if remote == local,
+        do: :ok,
+        else: {:error, 401, @invalid_secret}
     end
   end
 
@@ -85,16 +92,6 @@ defmodule Webhooks.Plugs.DBL do
     else
       value ->
         {:ok, value}
-    end
-  end
-
-  defp fetch_remote_secret(conn) do
-    case List.keyfind(conn.req_headers, "authorization", 0) do
-      {"authorization", authorization} ->
-        {:ok, authorization}
-
-      _ ->
-        {:error, 401, @remote_secret_missing}
     end
   end
 end
