@@ -15,5 +15,5 @@ Required setup:
 - Running Redis
   - Connection defaults to `127.0.0.1:6397`, can be configured by specifying `redis` in the config.exs file.
 
-Upon receiving an upvote this will add a key `DBL:#{USER_ID}` with the value `1` into redis.
+Upon receiving an upvote this will add a key `dbl:#{USER_ID}` with the value `1` into redis.
 > The key will expire after 24 hours; The user can vote again

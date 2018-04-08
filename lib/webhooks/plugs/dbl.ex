@@ -39,7 +39,7 @@ defmodule Webhooks.Plugs.DBL do
          :ok <- validate_bot_id(conn.params),
          # Fetch body params, the "test" type is incredible useful as only the owners may test...
          %{"type" => type, "user" => user} when type in ["test", "upvote"] <- conn.params do
-      Redix.command!(:redix, ["SETEX", "DBL:#{user}", 24 * 60 * 60, "1"])
+      Redix.command!(:redix, ["SETEX", "dbl:#{user}", 24 * 60 * 60, "1"])
 
       Util.respond(conn, 204)
     else
