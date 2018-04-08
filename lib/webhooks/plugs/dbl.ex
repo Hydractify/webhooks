@@ -66,7 +66,7 @@ defmodule Webhooks.Plugs.DBL do
 
   defp validate_secret(%{req_headers: headers}) do
     with {"authorization", remote} <-
-           List.keyfind(headers, "authorization", {:error, 401, @remote_secret_missing}),
+           List.keyfind(headers, "authorization", 0, {:error, 401, @remote_secret_missing}),
          {:ok, local} <- fetch_local(@dbl_secret, @local_secret_missing) do
       if remote == local,
         do: :ok,
