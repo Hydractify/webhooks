@@ -1,6 +1,8 @@
 # Webhooks
+[![Build Status](https://travis-ci.org/TheDragonProject/webhooks.svg?branch=master)](https://travis-ci.org/TheDragonProject/webhooks)  
 
 Small application listening for webhook notifications.
+> Docker container built by travis are available [here](https://hub.docker.com/r/spaceeec/tdp_webhooks/).
 
 Currently supporting:
 - [Discord Bots](https://discordbots.org) ([docs](https://discordbots.org/api/docs#webhooks))
